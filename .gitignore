@@ -1,0 +1,15 @@
+# SwiftPM / Xcode
+.build/
+.swiftpm/
+build/
+*.app
+xcuserdata/
+DerivedData/
+*.xcodeproj/
+Package.resolved
+
+# macOS
+.DS_Store
+
+# Agent tooling
+.claude/
