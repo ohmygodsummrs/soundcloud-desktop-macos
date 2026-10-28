@@ -104,6 +104,11 @@ final class SCClient: @unchecked Sendable {
         if method != "GET" { await ResponseCache.shared.invalidate() }
         let (data, response) = try await session.data(for: req)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        // DataDome bot wall: retrying or a new client_id won't help, and solving it isn't ours to do.
+        if status == 403, String(decoding: data.prefix(300), as: UTF8.self).contains("captcha-delivery.com") {
+            debugLog("DataDome block \(method) \(comps.path)")
+            throw SCError(message: L("SoundCloud blocked this as automated. Do it on soundcloud.com for now."))
+        }
         // A stale client_id shows up as 401/403 even with a good token.
         if (status == 401 || status == 403) && !retried {
             _ = try await refreshClientID()

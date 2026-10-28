@@ -30,12 +30,21 @@ struct SidebarScreen: View {
 struct FeedScreen: View {
     var model: AppModel
 
+    /// SoundCloud's personalized selections ("Mixed for you"…), shown above the feed like the web home.
+    @State var selections: [Selection] = []
+
     var body: some View {
+        let _ = Perf.body("FeedScreen")
         LazyVStack(alignment: .leading, spacing: 10) {
             SectionTitle(text: "Feed")
             Text(L("Hear the latest posts and reposts from the people you follow."))
                 .foregroundColor(Theme.secondary)
-            RecommendedPlaylists(model: model)
+            // Each carousel is its own lazy row: scrolling back up builds one per frame, not three.
+            // String ids: the feed rows below already use 0, 1, 2… in this same stack.
+            ForEach(selections.prefix(3).enumerated().map { ("selection-\($0.offset)", $0.element) }, id: \.0) { _, s in
+                PlaylistCarousel(model: model, title: s.title ?? "", playlists: s.items?.collection ?? [])
+                    .padding(.vertical, 9)
+            }
             PagedList(key: "feed-\(model.refreshCounter)") { href in
                 try await model.client.page(StreamItem.self, href ?? "/stream", limit: 30)
             } row: { i, items in
@@ -44,6 +53,23 @@ struct FeedScreen: View {
                 }
             }
         }
+        .task(id: model.refreshCounter) {
+            // Paint the last copy at once, then refresh.
+            if let cached = try? await SCClient.$cacheOnly.withValue(true, operation: { try await loadSelections() }) {
+                selections = cached
+            }
+            // Same playlists again would rebuild every card for nothing.
+            if let fresh = try? await loadSelections(), signature(fresh) != signature(selections) { selections = fresh }
+        }
+    }
+
+    func loadSelections() async throws -> [Selection] {
+        try await model.client.page(Selection.self, "/mixed-selections", limit: 10).collection
+            .filter { !($0.items?.collection.isEmpty ?? true) }
+    }
+
+    func signature(_ s: [Selection]) -> [String] {
+        s.prefix(3).flatMap { [$0.title ?? ""] + ($0.items?.collection ?? []).map { "\($0.id)|\($0.artwork ?? "")" } }
     }
 
     /// Plays the feed as a queue, skipping playlist entries.
@@ -51,36 +77,6 @@ struct FeedScreen: View {
         let tracks = items.compactMap(\.track)
         guard let id = items[i].track?.id, let start = tracks.firstIndex(where: { $0.id == id }) else { return }
         model.player.play(tracks, startAt: start)
-    }
-}
-
-/// Horizontal row of SoundCloud's recommended playlists, shown above the feed.
-/// The top of soundcloud.com's signed-in home: the personalized selections
-/// ("Mixed for you", "More of what you like"…), each as its own carousel.
-struct RecommendedPlaylists: View {
-    var model: AppModel
-
-    @State var selections: [Selection] = []
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 28) {
-            ForEach(Array(selections.prefix(3).enumerated()), id: \.offset) { _, s in
-                PlaylistCarousel(model: model, title: s.title ?? "", playlists: s.items?.collection ?? [])
-            }
-        }
-        .padding(.vertical, selections.isEmpty ? 0 : 8)
-        .task(id: model.refreshCounter) {
-            // Paint the last copy at once, then refresh.
-            if let cached = try? await SCClient.$cacheOnly.withValue(true, operation: { try await load() }) {
-                selections = cached
-            }
-            if let fresh = try? await load() { selections = fresh }
-        }
-    }
-
-    func load() async throws -> [Selection] {
-        try await model.client.page(Selection.self, "/mixed-selections", limit: 10).collection
-            .filter { !($0.items?.collection.isEmpty ?? true) }
     }
 }
 

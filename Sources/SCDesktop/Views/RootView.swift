@@ -194,6 +194,7 @@ struct SidebarSearchField: View {
                 .font(.system(size: 13))
                 .focused($focused)
                 .onChange(of: model.searchFocusRequests) { focused = true }
+                .onExitCommand { focused = false }
                 .onSubmit {
                     model.searchQuery = text.trimmingCharacters(in: .whitespacesAndNewlines)
                     model.select(.search)
@@ -489,7 +490,10 @@ struct PlayerBar: View {
                     LinkText(track.artist, size: 12, color: p.barText.color(0.6)) {
                         if let id = track.user?.id { model.push(.user(id)) }
                     }
-                    LinkText(track.displayTitle, size: 13, color: p.barText.color) { model.open(track) }
+                    HStack(spacing: 6) {
+                        LinkText(track.displayTitle, size: 13, color: p.barText.color) { model.open(track) }
+                        if track.isPreview { PreviewBadge(color: p.barHighlight.color) }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 IconButton(

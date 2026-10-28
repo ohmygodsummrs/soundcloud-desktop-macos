@@ -86,6 +86,20 @@ struct PlayableArtwork: View {
 }
 
 /// Plays · likes · reposts · comments with SF Symbols.
+/// Marks tracks SoundCloud only plays as a 30s snippet without Go+.
+struct PreviewBadge: View {
+    var size: CGFloat = 11
+    var color = Theme.accent
+
+    var body: some View {
+        Text(L("Go+ · 30s preview"))
+            .font(.system(size: size, weight: .medium))
+            .foregroundColor(color)
+            .lineLimit(1)
+            .help(L("The full track needs a SoundCloud Go+ subscription"))
+    }
+}
+
 struct StatsRow: View {
     var track: SCTrack
     var size = 11
@@ -372,9 +386,7 @@ struct TrackRow: View {
                     if let genre = track.genre, !genre.isEmpty {
                         Text("#\(genre)").font(.system(size: 11)).foregroundColor(Theme.secondary).lineLimit(1)
                     }
-                    if track.policy == "SNIP" {
-                        Text(L("Preview")).font(.system(size: 11)).foregroundColor(Theme.accent)
-                    }
+                    if track.isPreview { PreviewBadge() }
                 }
             }
 
@@ -423,8 +435,31 @@ struct TrackMenu: View {
     var track: SCTrack
     var onRemove: (() -> Void)? = nil
 
+    /// The real Menu is an AppKit pop-up built with all its items; creating one per row
+    /// as rows scroll in cost ~35ms per card. Rows get a look-alike until the pointer arrives.
+    @State private var armed = false
+
     var body: some View {
-            Menu("•••") {
+        if armed {
+            menu
+        } else {
+            label
+                .frame(width: 44)
+                .contentShape(Rectangle())
+                .onHover { if $0 { armed = true } }
+                .onTapGesture { armed = true }
+                .accessibilityElement()
+                .accessibilityLabel(L("More"))
+                .accessibilityAddTraits(.isButton)
+        }
+    }
+
+    var label: some View {
+        Text("•••").font(.system(size: 13)).foregroundColor(Theme.secondary)
+    }
+
+    var menu: some View {
+            Menu {
                 Button(L("Play next")) { model.player.playNext(track) }
                 Button(L("Add to queue")) { model.player.enqueue(track) }
                 ForEach(model.ownPlaylists) { p in
@@ -450,7 +485,12 @@ struct TrackMenu: View {
                 if let onRemove {
                     Button(L("Remove from playlist"), action: onRemove)
                 }
+            } label: {
+                label
             }
+            .menuStyle(.button)
+            .buttonStyle(.borderless)
+            .menuIndicator(.hidden)
             .frame(width: 44)
     }
 }

@@ -306,7 +306,13 @@ final class AppModel {
     func toggleFollow(_ user: SCUser) {
         let on = !following.contains(user.id)
         if on { following.insert(user.id) } else { following.remove(user.id) }
-        run("Follow") { try await self.client.setFollow(user.id, on: on) }
+        run("Follow") {
+            do { try await self.client.setFollow(user.id, on: on) } catch {
+                // Undo the optimistic state so the button doesn't lie.
+                if on { self.following.remove(user.id) } else { self.following.insert(user.id) }
+                throw error
+            }
+        }
     }
 
     func add(_ track: SCTrack, to playlist: SCPlaylist) {

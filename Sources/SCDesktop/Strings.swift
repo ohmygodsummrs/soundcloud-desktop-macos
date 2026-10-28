@@ -46,6 +46,8 @@ func followersCount(_ n: Int?) -> String {
 }
 
 private let russian: [String: String] = [
+    "SoundCloud blocked this as automated. Do it on soundcloud.com for now.": "SoundCloud заблокировал это как автоматическое действие. Пока сделайте это на soundcloud.com.",
+    "More": "Ещё",
     // Sidebar
     "Feed": "Лента",
     "Discover": "Обзор",
@@ -92,7 +94,8 @@ private let russian: [String: String] = [
     "Clear": "Очистить",
     "Create": "Создать",
     "Private": "Приватный",
-    "Preview": "Превью",
+    "Go+ · 30s preview": "Go+ · превью 30 с",
+    "The full track needs a SoundCloud Go+ subscription": "Полный трек доступен только с подпиской SoundCloud Go+",
     "Liked": "Нравится",
     "Like": "Нравится",
     "Repost": "Репост",

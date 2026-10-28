@@ -336,6 +336,7 @@ struct TrackScreen: View {
                 HStack(spacing: 12) {
                     StatsRow(track: t, size: 12)
                     Text(Format.duration(t.seconds)).font(.system(size: 12)).foregroundColor(Theme.secondary)
+                    if t.isPreview { PreviewBadge(size: 12) }
                     if let genre = t.genre, !genre.isEmpty {
                         Text("#\(genre)")
                             .font(.system(size: 11, weight: .medium))

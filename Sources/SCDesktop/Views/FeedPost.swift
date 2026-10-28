@@ -9,6 +9,7 @@ struct FeedPost: View {
     var onPlay: () -> Void
 
     var body: some View {
+        let _ = Perf.body("FeedPost")
         let p = Theme.current
         VStack(alignment: .leading, spacing: 10) {
             if let user = item.user {
@@ -32,8 +33,8 @@ struct FeedPost: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(p.surface.color(p.glass ? 0.25 : 0.35))
-        .cornerRadius(12)
+        // A rounded fill, not .cornerRadius: clipping the card made every frame mask the artwork offscreen.
+        .background(RoundedRectangle(cornerRadius: 12).fill(p.surface.color(p.glass ? 0.25 : 0.35)))
         .padding(.bottom, 6)
     }
 }
@@ -44,6 +45,7 @@ struct FeedTrackCard: View {
     var onPlay: () -> Void
 
     var body: some View {
+        let _ = Perf.body("FeedTrackCard")
         let p = Theme.current
         let isCurrent = model.player.current?.id == track.id
         let liked = model.likedTracks.contains(track.id)
@@ -77,6 +79,7 @@ struct FeedTrackCard: View {
                 HStack(spacing: 10) {
                     StatsRow(track: track)
                     Text(Format.duration(track.seconds)).font(.system(size: 11)).foregroundColor(Theme.secondary)
+                    if track.isPreview { PreviewBadge() }
                     if let genre = track.genre, !genre.isEmpty {
                         Text("#\(genre)").font(.system(size: 11)).foregroundColor(Theme.secondary).lineLimit(1)
                     }

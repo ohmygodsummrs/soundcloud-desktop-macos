@@ -60,6 +60,8 @@ struct SCTrack: Decodable, Identifiable {
 
     /// Stub tracks (from playlists) lack everything except the id.
     var isStub: Bool { title == nil }
+    /// SoundCloud only serves a 30s snippet without Go+.
+    var isPreview: Bool { policy == "SNIP" }
 
     var displayTitle: String { title ?? "Track \(id)" }
     var artist: String { user?.name ?? "" }
